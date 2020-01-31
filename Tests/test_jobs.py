@@ -2,15 +2,16 @@ import jobs
 import os.path
 
 
-# Simple test function that checks if the function returns a list with over 200 items
+# Simple test function that checks if the function returns a list with over 100 items
 def test_retrieve_jobs():
     result = jobs.retrieve_jobs()
-    assert len(result) > 200
+    assert len(result) > 100
 
 
 # Simple test function that checks if the function actually writes the JSON data by first checking
 # if there is a file with the name specified. If it exists, then it is deleted. Then the dump function is called.
-# Then it checks if the file exists and if it has content inside.
+# Then it checks if the file exists and if it has content that should be expected inside. In this case, I check
+# if it has 'Java Software Developer' inside.
 def test_dump_data():
     fileName = 'json.txt'
     if os.path.exists(fileName):
@@ -22,5 +23,10 @@ def test_dump_data():
     with open(fileName, 'r') as openFile:
         fileLines = openFile.readlines()
         assert len(fileLines) > 0
+
+        for fileLine in fileLines:
+            if "JAVA Software Developer" in fileLine:
+                assert True
+            break
 
 

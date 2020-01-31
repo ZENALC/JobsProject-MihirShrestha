@@ -1,6 +1,7 @@
 # Author: Mihir Shrestha
 import requests
 import time
+import json
 
 
 # Main function that calls the retrieve_jobs() and dump_data() functions.
@@ -37,7 +38,7 @@ def retrieve_jobs():
 def dump_data(jobs, file_name):
     with open(file_name, 'w') as openFile:
         for job in jobs:
-            openFile.write(str(job))
+            json.dump(job, openFile)
     print("Successfully dumped JSON data to {}.".format(file_name))
 
 
