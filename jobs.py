@@ -2,13 +2,21 @@
 import requests
 import time
 import json
+import sqlite3
 
 
-# Main function that calls the retrieve_jobs() and dump_data() functions.
+# Main function that calls the retrieve_jobs(), save_to_database() and dump_data() functions.
 def main():
+    WRITE_TO_FILE = True
+    UPDATE_DATABASE = True
     jobs = retrieve_jobs()
-    fileName = "json.txt"
-    dump_data(jobs, fileName)
+
+    if UPDATE_DATABASE:
+        save_to_database(jobs)
+
+    if WRITE_TO_FILE:
+        fileName = "json.txt"
+        dump_data(jobs, fileName)
 
 
 # Function that retrieves the jobs from GitHub. It has a sleep function implemented,
@@ -40,6 +48,41 @@ def dump_data(jobs, file_name):
         for job in jobs:
             json.dump(job, openFile)
     print("Successfully dumped JSON data to {}.".format(file_name))
+
+
+# Simple function that dumps data to its corresponding column in the jobs.db database.
+def save_to_database(jobs):
+    connection = sqlite3.connect('jobs.db')
+    cursor = connection.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS jobs(
+                   id TEXT PRIMARY KEY,
+                   Position_Type TEXT,
+                   URL TEXT,
+                   Created_at TEXT,
+                   Company TEXT,
+                   Company_URL TEXT,
+                   Location TEXT,
+                   Title TEXT,
+                   Description TEXT,
+                   Company_Logo TEXT
+                    )''')
+    for job in jobs:
+        try:
+            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [job['id'],
+                                                                                      job['type'],
+                                                                                      job['url'],
+                                                                                      job['created_at'],
+                                                                                      job['company'],
+                                                                                      job['company_url'],
+                                                                                      job['location'],
+                                                                                      job['title'],
+                                                                                      job['description'],
+                                                                                      job['company_logo'],
+                                                                                      ])
+        except sqlite3.IntegrityError:
+            pass
+        connection.commit()
+    connection.close()
 
 
 if __name__ == "__main__":
