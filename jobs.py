@@ -42,7 +42,7 @@ def retrieve_jobs():
     return jsonData
 
 
-# Simple function that dumps JSON data to a txt file.
+# Simple function that dumps JSON data to a .txt file.
 def dump_data(jobs, file_name):
     with open(file_name, 'w') as openFile:
         for job in jobs:
@@ -52,6 +52,10 @@ def dump_data(jobs, file_name):
 
 # Simple function that dumps data to its corresponding column in the jobs.db database.
 def save_to_database(jobs):
+    if not (type(jobs) is list or type(jobs) is dict):
+        return
+    if type(jobs) is dict:
+        jobs = [jobs]
     connection = sqlite3.connect('jobs.db')
     cursor = connection.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS jobs(
@@ -64,23 +68,27 @@ def save_to_database(jobs):
                    Location TEXT,
                    Title TEXT,
                    Description TEXT,
+                   How_To_Apply TEXT,
                    Company_Logo TEXT
                     )''')
     for job in jobs:
+        if len(job) != 11:
+            return
         try:
-            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [job['id'],
-                                                                                      job['type'],
-                                                                                      job['url'],
-                                                                                      job['created_at'],
-                                                                                      job['company'],
-                                                                                      job['company_url'],
-                                                                                      job['location'],
-                                                                                      job['title'],
-                                                                                      job['description'],
-                                                                                      job['company_logo'],
-                                                                                      ])
+            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [job['id'],
+                                                                                         job['type'],
+                                                                                         job['url'],
+                                                                                         job['created_at'],
+                                                                                         job['company'],
+                                                                                         job['company_url'],
+                                                                                         job['location'],
+                                                                                         job['title'],
+                                                                                         job['description'],
+                                                                                         job['how_to_apply'],
+                                                                                         job['company_logo'],
+                                                                                         ])
         except sqlite3.IntegrityError:
-            pass
+            print("Insertion failed.")
         connection.commit()
     connection.close()
 
