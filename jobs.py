@@ -53,7 +53,7 @@ def dump_data(jobs, file_name):
 # Simple function that dumps data to its corresponding column in the jobs.db database.
 def save_to_database(jobs):
     if not (type(jobs) is list or type(jobs) is dict):
-        return
+        return None
     if type(jobs) is dict:
         jobs = [jobs]
     connection = sqlite3.connect('jobs.db')
@@ -73,7 +73,7 @@ def save_to_database(jobs):
                     )''')
     for job in jobs:
         if len(job) != 11:
-            return
+            return None
         try:
             cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [job['id'],
                                                                                          job['type'],
