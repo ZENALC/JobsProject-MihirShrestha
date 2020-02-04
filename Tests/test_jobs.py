@@ -4,7 +4,7 @@ import sqlite3
 import random
 
 
-# Simple test function that checks if the function returns a list with over 100 items
+# Simple test function that checks if the function returns a list with over 100 items.
 def test_retrieve_jobs():
     result = jobs.retrieve_jobs()
     assert len(result) > 100
@@ -25,12 +25,17 @@ def test_save_to_database():
 
     # Checking if the database has some values that should be expected there. In this case, I know
     # that there is a job where the title is 'Lead Data Acquisition Design Engineer'.
-    # UPDATE: It picks a random one from the retrieved list now and checks if it exists in the database.
-    testTitle = random.choice(retrievedJobs)['title']
+    # UPDATE: It also picks a random one from the retrieved list now and checks if it exists in the database.
+    testTitle1 = random.choice(retrievedJobs)['title']
+    testTitle2 = "Lead Data Acquisition Design Engineer"
     connection = sqlite3.connect('jobs.db')
     cursor = connection.cursor()
-    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle,))
+
+    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle1,))
     assert cursor.fetchone()
+    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle2,))
+    assert cursor.fetchone()
+
     connection.close()
 
 
@@ -110,6 +115,6 @@ def test_dump_data():
         for fileLine in fileLines:
             if testTitle in fileLine:
                 assert True
-            break
+                break
 
 

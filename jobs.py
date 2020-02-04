@@ -88,7 +88,7 @@ def save_to_database(jobs):
                                                                                          job['company_logo'],
                                                                                          ])
         except sqlite3.IntegrityError:
-            print("Insertion failed.")
+            print("Data already exists in the table..")
         connection.commit()
     connection.close()
 
