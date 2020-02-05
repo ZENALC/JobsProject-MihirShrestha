@@ -116,5 +116,3 @@ def test_dump_data():
             if testTitle in fileLine:
                 assert True
                 break
-
-
