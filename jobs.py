@@ -7,6 +7,7 @@ import sqlite3
 
 # Main function that calls the retrieve_jobs(), save_to_database() and dump_data() functions.
 def main():
+    # nice job on sprint one - benign comment to test github actions
     WRITE_TO_FILE = True
     UPDATE_DATABASE = True
     jobs = retrieve_jobs()
