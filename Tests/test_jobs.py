@@ -111,8 +111,9 @@ def test_dump_data():
     with open(fileName, 'r') as openFile:
         fileLines = openFile.readlines()
         assert len(fileLines) > 0
-
+        match = False
         for fileLine in fileLines:
             if testTitle in fileLine:
-                assert True
+                match = True
                 break
+        assert match
