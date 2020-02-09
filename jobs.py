@@ -31,7 +31,8 @@ def main():
 # if it received a 200 response code or not and reports the code back to the user if it is not 200.
 # UPDATE: It is now not hard-coded to go up to 5 pages, it keeps looping through until the number
 # of jobs is less than 50. Also, a new failCounter has been implemented to reduce the risks for
-# an infinite loop.
+# an infinite loop. With the failCounter, if one page fails 3 times, then all the following pages' data will
+# also not be retrieved.
 def retrieve_jobs() -> List[Dict]:
     missedList = []
     jsonData = []
@@ -92,11 +93,13 @@ def dump_data(jobs: list, file_name: str):
 # Simple function that dumps data to its corresponding column in the database.
 def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
     if not (type(jobs) is list or type(jobs) is dict):
+        print("Illegal type of data. {} is of type {}. Please enter a list or dictionary.".format(jobs, type(jobs)))
         return None
     if type(jobs) is dict:
         jobs = [jobs]
     for job in jobs:
         if len(job) != 11:
+            print("Incorrect number of arguments. Insertion failed.")
             return None
         try:
             cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [job['id'],
@@ -114,7 +117,7 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
         except sqlite3.IntegrityError:
             print("Data already exists in the table.")
     commit_db(connection)
-    print("Successfully stored all JSON data to jobs.db.")
+    print("Successfully stored all new JSON data to jobs.db.")
 
 
 # Simple function that creates a connection with a filename given and returns a connection and cursor.
@@ -151,11 +154,6 @@ def create_table(connection: sqlite3.Connection, cursor: sqlite3.Cursor):
                        Company_Logo TEXT
                         );''')
     commit_db(connection)
-
-
-# Simple function that cleans up SQL code by joining it together with only letters and numbers.
-def clean_sql(data: str):
-    return ''.join(char for char in data if char.isalnum())
 
 
 if __name__ == "__main__":
