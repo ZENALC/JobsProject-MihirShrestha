@@ -14,9 +14,13 @@ def get_data():
     return jobs.retrieve_jobs()
 
 
+def test_retrieve_stackoverflow_jobs():
+    pass
+
+
 # Simple test function that checks if the function returns a list with over 100 items and checks
 # if the first item in the list is a dict.
-def test_retrieve_jobs(get_data):
+def test_retrieve_github_jobs(get_data):
     assert len(get_data) > 100
     assert type(get_data[1]) is dict
 

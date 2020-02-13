@@ -4,6 +4,8 @@ from time import sleep
 import json
 import sqlite3
 from typing import Tuple, List, Dict
+import feedparser
+import ssl
 
 
 # Main function that calls the retrieve_jobs(), open_db(), create_table_jobs(),
@@ -12,18 +14,20 @@ def main():
     # nice job on sprint one - benign comment to test github actions
     WRITE_TO_FILE = True
     UPDATE_DATABASE = True
-    jobs = retrieve_jobs()
+    githubJobs = retrieve_jobs()  # these are from github
+    stackOverFlowjobs = retrieve_stack_over_flow_jobs()  # these are from stackOverFlow
 
     if UPDATE_DATABASE:
         databaseName = 'jobs.db'
         connection, cursor = open_db(databaseName)
         create_table(connection, cursor)
-        save_to_database(jobs, connection, cursor)
+        save_to_database(githubJobs, connection, cursor)
+        save_to_database(stackOverFlowjobs, connection, cursor)
         close_db(connection)
 
     if WRITE_TO_FILE:
         fileName = "json.txt"
-        dump_data(jobs, fileName)
+        dump_data(githubJobs, fileName)
 
 
 # Function that retrieves the jobs from GitHub. It has a sleep function implemented,
@@ -47,6 +51,7 @@ def retrieve_jobs() -> List[Dict]:
         url = "https://jobs.github.com/positions.json?page=" + str(num)
         response = get(url)
         if response.status_code == 200:
+            print("Received response: {} for page {}.".format(response.status_code, num))
             newJsonData = response.json()
             jsonData += newJsonData
             if len(newJsonData) < 50:
@@ -55,7 +60,7 @@ def retrieve_jobs() -> List[Dict]:
                 missedList.remove(num)
                 failCounter = 0
         else:
-            print("Received response: {} for page {}.".format(response.status_code, num))
+            print("Received response: {} for page {}. Trying again...".format(response.status_code, num))
             if num not in missedList:
                 missedList.append(num)
             failCounter += 1
@@ -70,11 +75,40 @@ def retrieve_jobs() -> List[Dict]:
         num += 1
 
     if len(missedList) > 0:
-        print("Missed data for pages {}.".format(str(missedList)[1:-1]))
+        print("Missed data for page {}.".format(str(missedList)[1:-1]))
     else:
-        print("Successfully retrieved data from all pages.")
+        print("Successfully retrieved data from all GitHub pages.")
 
     return jsonData
+
+
+def retrieve_stack_over_flow_jobs():
+    url = "https://stackoverflow.com/jobs/feed"
+    # Found the conditional online. Parsing does not work if you don't run the SSL command.
+    if hasattr(ssl, '_create_unverified_context'):
+        ssl._create_default_https_context = ssl._create_unverified_context
+    feed = feedparser.parse(url)
+    totalData = []
+    totalDict = {}
+    for entry in feed.entries:
+        totalDict["id"] = entry['id']
+        totalDict["type"] = None
+        totalDict["url"] = entry["link"]
+        totalDict["created_at"] = entry["published"]
+        totalDict["company"] = entry["author"]
+        totalDict["company_url"] = None
+        totalDict["title"] = entry["title"]
+        totalDict["description"] = entry["summary"]
+        totalDict["how_to_apply"] = None
+        totalDict["company_logo"] = None
+        try:
+            totalDict["location"] = entry["location"]
+        except KeyError:
+            totalDict["location"] = None
+        totalData.append(totalDict)
+        totalDict = {}
+    print("Successfully retrieved {} entries from StackOverFlow".format(len(feed.entries)))
+    return totalData
 
 
 # Simple function that dumps JSON data to a .txt file.
@@ -115,9 +149,10 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
                                                                                           job['company_logo']
                                                                                           ])
         except sqlite3.IntegrityError:
-            print("Data already exists in the table.")
+            pass
+            # print("Data already exists in the table.")
     commit_db(connection)
-    print("Successfully stored all new JSON data to jobs.db.")
+    print("Successfully saved new data to database.")
 
 
 # Simple function that creates a connection with a filename given and returns a connection and cursor.
@@ -142,15 +177,15 @@ def commit_db(connection: sqlite3.Connection):
 def create_table(connection: sqlite3.Connection, cursor: sqlite3.Cursor):
     cursor.execute('''CREATE TABLE IF NOT EXISTS jobs(
                        id TEXT PRIMARY KEY,
-                       Position_Type TEXT NOT NULL,
+                       Position_Type TEXT,
                        URL TEXT NOT NULL,
                        Created_at TEXT NOT NULL,
                        Company TEXT NOT NULL,
                        Company_URL TEXT,
-                       Location TEXT NOT NULL,
+                       Location TEXT,
                        Title TEXT NOT NULL,
                        Description TEXT NOT NULL,
-                       How_To_Apply TEXT NOT NULL,
+                       How_To_Apply TEXT,
                        Company_Logo TEXT
                         );''')
     commit_db(connection)
