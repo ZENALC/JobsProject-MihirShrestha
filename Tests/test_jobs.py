@@ -138,7 +138,7 @@ def test_create_table():
 
 
 # Simple test function that checks if the jobs are being saved to the database.
-def test_save_to_database(get_data_github):
+def test_save_to_database(get_data_github, get_data_stackoverflow):
     # Checking to see if the database exists, so we can delete it to check
     # if the save_to_database function actually saves the data to a fresh, new database.
     if os.path.exists(databaseFileName):
@@ -147,15 +147,15 @@ def test_save_to_database(get_data_github):
     connection, cursor = jobs.open_db(databaseFileName)
     jobs.create_table(connection, cursor)
     jobs.save_to_database(get_data_github, connection, cursor)
+    jobs.save_to_database(get_data_stackoverflow, connection, cursor)
 
     # Checking if the database has some values that should be expected there. In this case, I know
     # that there is a job where the title is 'Lead Data Acquisition Design Engineer'.
     # It also picks a random one from the retrieved list and checks if it exists in the database.
-    # UPDATE: It also checks for a random title from the stackoverflow list and one that I know is there -
-    # namely the job at Safenet Consulting in Wisconsin.
+    # UPDATE: It also checks for a random title from the stackoverflow list and a title that I know is there.
     testTitle1 = random.choice(get_data_github)['title']
     testTitle2 = "Lead Data Acquisition Design Engineer"
-    testTitle3 = "Full Stack Developer at SafeNet Consulting (Milwaukee, WI)"
+    testTitle3 = "Senior Python Backend Engineer at Tessian (London, UK)"
     testTitle4 = random.choice(get_data_stackoverflow)['title']
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle1,))
     assert cursor.fetchone()
