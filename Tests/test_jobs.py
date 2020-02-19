@@ -9,20 +9,29 @@ testFileName = "test.txt"
 
 
 @pytest.fixture
-def get_data():
+def get_data_github():
     import jobs
     return jobs.retrieve_jobs()
 
 
-def test_retrieve_stackoverflow_jobs():
-    pass
+@pytest.fixture
+def get_data_stackoverflow():
+    import jobs
+    return jobs.retrieve_stack_over_flow_jobs()
+
+
+# Simple test function that checks if the function returns a list with over 500 items and checks
+# if the first item in the list is a dict.
+def test_retrieve_stackoverflow_jobs(get_data_stackoverflow):
+    assert len(get_data_stackoverflow) > 500
+    assert type(get_data_stackoverflow[1]) is dict
 
 
 # Simple test function that checks if the function returns a list with over 100 items and checks
 # if the first item in the list is a dict.
-def test_retrieve_github_jobs(get_data):
-    assert len(get_data) > 100
-    assert type(get_data[1]) is dict
+def test_retrieve_github_jobs(get_data_github):
+    assert len(get_data_github) > 100
+    assert type(get_data_github[1]) is dict
 
 
 # Simple test function that checks if the function actually writes the JSON data by first checking
@@ -30,15 +39,15 @@ def test_retrieve_github_jobs(get_data):
 # Then it checks if the file exists and if it has content that should be expected inside. In this case, I check
 # if it has the title 'Full Stack Software Engineer - Rails' inside.
 # UPDATE: It also picks a random one from the retrieved list now and checks if it exists in the .txt file.
-def test_dump_data(get_data):
+def test_dump_data(get_data_github):
     testTitle = 'Full Stack Software Engineer - Rails'
-    randomTestTitle = random.choice(get_data)['title']
+    randomTestTitle = random.choice(get_data_github)['title']
     fileName = 'json.txt'
 
     if os.path.exists(fileName):
         os.remove(fileName)
 
-    jobs.dump_data(get_data, fileName)
+    jobs.dump_data(get_data_github, fileName)
     assert os.path.exists(fileName)
 
     with open(fileName, 'r') as openFile:
@@ -129,7 +138,7 @@ def test_create_table():
 
 
 # Simple test function that checks if the jobs are being saved to the database.
-def test_save_to_database(get_data):
+def test_save_to_database(get_data_github):
     # Checking to see if the database exists, so we can delete it to check
     # if the save_to_database function actually saves the data to a fresh, new database.
     if os.path.exists(databaseFileName):
@@ -137,16 +146,24 @@ def test_save_to_database(get_data):
 
     connection, cursor = jobs.open_db(databaseFileName)
     jobs.create_table(connection, cursor)
-    jobs.save_to_database(get_data, connection, cursor)
+    jobs.save_to_database(get_data_github, connection, cursor)
 
     # Checking if the database has some values that should be expected there. In this case, I know
     # that there is a job where the title is 'Lead Data Acquisition Design Engineer'.
     # It also picks a random one from the retrieved list and checks if it exists in the database.
-    testTitle1 = random.choice(get_data)['title']
+    # UPDATE: It also checks for a random title from the stackoverflow list and one that I know is there -
+    # namely the job at Safenet Consulting in Wisconsin.
+    testTitle1 = random.choice(get_data_github)['title']
     testTitle2 = "Lead Data Acquisition Design Engineer"
+    testTitle3 = "Full Stack Developer at SafeNet Consulting (Milwaukee, WI)"
+    testTitle4 = random.choice(get_data_stackoverflow)['title']
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle1,))
     assert cursor.fetchone()
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle2,))
+    assert cursor.fetchone()
+    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle3,))
+    assert cursor.fetchone()
+    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle4,))
     assert cursor.fetchone()
 
     jobs.close_db(connection)
@@ -202,7 +219,8 @@ def test_add_to_database_with_bad_data():
     jobs.save_to_database({'id': 'test23', "type": "full-time"}, connection, cursor)
 
 
-def test_add_to_database_SQL_injection():
+# Function that tries to add values that should've dropped the table jobs. Tests for SQL injection.
+def test_add_to_database_sql_injection():
     connection, cursor = jobs.open_db(databaseFileName)
     sqlInjectionDict = [
         {"id": "; DROP TABLE JOBS",
