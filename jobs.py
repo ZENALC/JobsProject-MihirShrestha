@@ -1,11 +1,15 @@
 # Author: Mihir Shrestha
+from geopy.exc import GeocoderTimedOut
 from requests import get
 from time import sleep
+from geopy.geocoders import Nominatim
+import plotly.express as px
 import json
 import sqlite3
 from typing import Tuple, List, Dict
 import feedparser
 import ssl
+import PyQt5
 
 
 # Main function that calls the retrieve_jobs(), open_db(), create_table_jobs(),
@@ -28,6 +32,25 @@ def main():
     if WRITE_TO_FILE:
         fileName = "json.txt"
         dump_data(githubJobs, fileName)
+
+
+def return_geo_location(geolocator, location: str):
+    timeout = True
+    failCounter = 0
+    geoLocation = None
+    if not location or 'remote' in location.lower():
+        return None
+    while timeout and failCounter < 10:
+        try:
+            geoLocation = geolocator.geocode(location, timeout=1)
+            timeout = False
+        except GeocoderTimedOut:
+            failCounter += 1
+            continue
+    if not geoLocation:
+        return None
+    print("Just retrieved geo-information for {}".format(location))
+    return str((geoLocation.longitude, geoLocation.latitude))
 
 
 # Function that retrieves the jobs from GitHub. It has a sleep function implemented,
@@ -75,7 +98,7 @@ def retrieve_jobs() -> List[Dict]:
         num += 1
 
     if len(missedList) > 0:
-        print("Missed data for page {}.".format(str(missedList)[1:-1]))
+        print("Missed data for page {} and potentially other future pages.".format(str(missedList)[1:-1]))
     else:
         print("Successfully retrieved data from all GitHub pages.")
 
@@ -131,12 +154,23 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
         return None
     if type(jobs) is dict:
         jobs = [jobs]
+    geolocator = Nominatim(user_agent="jobsRetriever")
     for job in jobs:
         if len(job) != 11:
             print("Incorrect number of arguments. Insertion failed.")
             return None
+        cursor.execute("SELECT * FROM jobs WHERE jobs.id = ?", (job['id'],))
+        if cursor.fetchone() is not None:
+            continue
+        cursor.execute("SELECT jobs.Geo_Location FROM jobs WHERE jobs.location = ?", (job['location'],))
+        cursorResult = cursor.fetchone()
+        if cursorResult is not None:
+            geolocation = cursorResult[0]
+            print("Just retrieved cached geo-information for {}.".format(job['location']))
+        else:
+            geolocation = return_geo_location(geolocator, job['location'])
         try:
-            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [job['id'],
+            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [job['id'],
                                                                                           job['type'],
                                                                                           job['url'],
                                                                                           job['created_at'],
@@ -146,12 +180,13 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
                                                                                           job['title'],
                                                                                           job['description'],
                                                                                           job['how_to_apply'],
-                                                                                          job['company_logo']
+                                                                                          job['company_logo'],
+                                                                                          geolocation
                                                                                           ])
+            commit_db(connection)
         except sqlite3.IntegrityError:
             pass
             # print("Data already exists in the table.")
-    commit_db(connection)
     print("Successfully saved new data to database.")
 
 
@@ -186,7 +221,8 @@ def create_table(connection: sqlite3.Connection, cursor: sqlite3.Cursor):
                        Title TEXT NOT NULL,
                        Description TEXT NOT NULL,
                        How_To_Apply TEXT,
-                       Company_Logo TEXT
+                       Company_Logo TEXT,
+                       Geo_Location TEXT
                         );''')
     commit_db(connection)
 

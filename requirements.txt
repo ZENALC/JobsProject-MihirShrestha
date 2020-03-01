@@ -1,3 +1,6 @@
+plotly
+geopy
 requests
 pytest
 feedparser
+pandas
