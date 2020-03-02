@@ -9,7 +9,6 @@ import sqlite3
 from typing import Tuple, List, Dict
 import feedparser
 import ssl
-import PyQt5
 
 
 # Main function that calls the retrieve_jobs(), open_db(), create_table_jobs(),
