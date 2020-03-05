@@ -1,3 +1,5 @@
+beautifulsoup4
+dash
 plotly
 geopy
 requests

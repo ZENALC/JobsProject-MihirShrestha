@@ -3,12 +3,14 @@ from geopy.exc import GeocoderTimedOut
 from requests import get
 from time import sleep
 from geopy.geocoders import Nominatim
-import plotly.express as px
 import json
 import sqlite3
 from typing import Tuple, List, Dict
 import feedparser
 import ssl
+import plotly.graph_objects as go
+import pandas as pd
+from bs4 import BeautifulSoup
 
 
 # Main function that calls the retrieve_jobs(), open_db(), create_table_jobs(),
@@ -17,6 +19,7 @@ def main():
     # nice job on sprint one - benign comment to test github actions
     WRITE_TO_FILE = True
     UPDATE_DATABASE = True
+
     githubJobs = retrieve_jobs()  # these are from github
     stackOverFlowjobs = retrieve_stack_over_flow_jobs()  # these are from stackOverFlow
 
@@ -33,12 +36,32 @@ def main():
         dump_data(githubJobs, fileName)
 
 
+def show_map():
+    databaseConnection = sqlite3.connect('jobs.db')
+    df = pd.read_sql_query("SELECT * FROM jobs", databaseConnection)
+    databaseConnection.commit()
+    databaseConnection.close()
+
+    fig = go.Figure(data=go.Scattergeo(
+        lon=df['geo_longitude'],
+        lat=df['geo_latitude'],
+        text=df['Company'] + " located at " + df['Location'],
+        mode='markers',
+    ))
+
+    fig.update_layout(
+        title='Jobs from GitHub and StackOverFlow',
+        geo_scope='world',
+    )
+    fig.show()
+
+
 def return_geo_location(geolocator, location: str):
     timeout = True
     failCounter = 0
     geoLocation = None
     if not location or 'remote' in location.lower():
-        return None
+        return None, None
     while timeout and failCounter < 10:
         try:
             geoLocation = geolocator.geocode(location, timeout=1)
@@ -47,9 +70,9 @@ def return_geo_location(geolocator, location: str):
             failCounter += 1
             continue
     if not geoLocation:
-        return None
+        return None, None
     print("Just retrieved geo-information for {}".format(location))
-    return str((geoLocation.longitude, geoLocation.latitude))
+    return geoLocation.latitude, geoLocation.longitude
 
 
 # Function that retrieves the jobs from GitHub. It has a sleep function implemented,
@@ -161,15 +184,22 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
         cursor.execute("SELECT * FROM jobs WHERE jobs.id = ?", (job['id'],))
         if cursor.fetchone() is not None:
             continue
-        cursor.execute("SELECT jobs.Geo_Location FROM jobs WHERE jobs.location = ?", (job['location'],))
+        cursor.execute("SELECT jobs.geo_latitude, jobs.geo_longitude FROM jobs WHERE jobs.location = ?", (job['location'],))
         cursorResult = cursor.fetchone()
         if cursorResult is not None:
-            geolocation = cursorResult[0]
+            geolocation = cursorResult
             print("Just retrieved cached geo-information for {}.".format(job['location']))
         else:
             geolocation = return_geo_location(geolocator, job['location'])
         try:
-            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", [job['id'],
+            if job['description'] is not None:
+                soup = BeautifulSoup(job['description'], features="html.parser")
+                job['description'] = soup.get_text()
+            if job['how_to_apply'] is not None:
+                soup = BeautifulSoup(job['how_to_apply'], features="html.parser")
+                job['how_to_apply'] = soup.get_text()
+            cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                                                                                          [job['id'],
                                                                                           job['type'],
                                                                                           job['url'],
                                                                                           job['created_at'],
@@ -180,13 +210,13 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
                                                                                           job['description'],
                                                                                           job['how_to_apply'],
                                                                                           job['company_logo'],
-                                                                                          geolocation
+                                                                                          geolocation[0],
+                                                                                          geolocation[1]
                                                                                           ])
             commit_db(connection)
         except sqlite3.IntegrityError:
             pass
             # print("Data already exists in the table.")
-    print("Successfully saved new data to database.")
 
 
 # Simple function that creates a connection with a filename given and returns a connection and cursor.
@@ -221,7 +251,8 @@ def create_table(connection: sqlite3.Connection, cursor: sqlite3.Cursor):
                        Description TEXT NOT NULL,
                        How_To_Apply TEXT,
                        Company_Logo TEXT,
-                       Geo_Location TEXT
+                       geo_latitude TEXT,
+                       geo_longitude TEXT
                         );''')
     commit_db(connection)
 
