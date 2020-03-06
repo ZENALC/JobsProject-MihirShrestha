@@ -57,15 +57,18 @@ def show_map():
 
 
 def return_geo_location(geolocator, location: str):
-    timeout = True
+    found = False
     failCounter = 0
     geoLocation = None
     if not location or 'remote' in location.lower():
         return None, None
-    while timeout and failCounter < 10:
+    while not found and failCounter < 10:
         try:
-            geoLocation = geolocator.geocode(location, timeout=1)
-            timeout = False
+            if location.strip()[-2:] == "CA":
+                geoLocation = geolocator.geocode(location, timeout=1, country_codes=["US"])
+            else:
+                geoLocation = geolocator.geocode(location, timeout=1)
+            found = True
         except GeocoderTimedOut:
             failCounter += 1
             continue
