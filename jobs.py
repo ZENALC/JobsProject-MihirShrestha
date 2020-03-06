@@ -11,6 +11,7 @@ import ssl
 import plotly.graph_objects as go
 import pandas as pd
 from bs4 import BeautifulSoup
+from dateutil import parser
 
 
 # Main function that calls the retrieve_jobs(), open_db(), create_table_jobs(),
@@ -187,7 +188,8 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
         cursor.execute("SELECT * FROM jobs WHERE jobs.id = ?", (job['id'],))
         if cursor.fetchone() is not None:
             continue
-        cursor.execute("SELECT jobs.geo_latitude, jobs.geo_longitude FROM jobs WHERE jobs.location = ?", (job['location'],))
+        cursor.execute("SELECT jobs.geo_latitude, jobs.geo_longitude FROM jobs WHERE jobs.location = ?",
+                       (job['location'],))
         cursorResult = cursor.fetchone()
         if cursorResult is not None:
             geolocation = cursorResult
@@ -202,20 +204,20 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
                 soup = BeautifulSoup(job['how_to_apply'], features="html.parser")
                 job['how_to_apply'] = soup.get_text()
             cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-                                                                                          [job['id'],
-                                                                                          job['type'],
-                                                                                          job['url'],
-                                                                                          job['created_at'],
-                                                                                          job['company'],
-                                                                                          job['company_url'],
-                                                                                          job['location'],
-                                                                                          job['title'],
-                                                                                          job['description'],
-                                                                                          job['how_to_apply'],
-                                                                                          job['company_logo'],
-                                                                                          geolocation[0],
-                                                                                          geolocation[1]
-                                                                                          ])
+                           [job['id'],
+                            job['type'],
+                            job['url'],
+                            parser.parse(job['created_at']).strftime("%Y-%m-%d"),
+                            job['company'],
+                            job['company_url'],
+                            job['location'],
+                            job['title'],
+                            job['description'],
+                            job['how_to_apply'],
+                            job['company_logo'],
+                            geolocation[0],
+                            geolocation[1]
+                            ])
             commit_db(connection)
         except sqlite3.IntegrityError:
             pass
