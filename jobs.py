@@ -93,8 +93,9 @@ def retrieve_jobs() -> List[Dict]:
             failCounter += 1
             if failCounter == 3:
                 break
-            # Code will try to get data from the page again for 3 attempts. It first sleeps again
-            # for a half of a second to give GitHub an idea that we are friendly.
+            # Code will try to get data from the page again for 3 attempts.
+            # It first sleeps again for a half of a second to give GitHub
+            # an idea that we are friendly.
             # If it fails 3 times, it finally breaks out of the loop.
             sleep(.5)
             continue
