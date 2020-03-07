@@ -3,6 +3,8 @@ import os.path
 import random
 import pytest
 import sqlite3
+import pandas as pd
+import app
 
 databaseFileName = "jobs.db"
 testFileName = "test.txt"
@@ -204,3 +206,20 @@ def test_add_to_database_with_bad_data():
     jobs.save_to_database([[]], connection, cursor)
     jobs.save_to_database([{'id': 'test23', "type": "full-time"}], connection, cursor)
     jobs.save_to_database({'id': 'test23', "type": "full-time"}, connection, cursor)
+
+
+def test_query():
+    new_df = app.query("SELECT * FROM JOBS;")
+    assert new_df is not None
+
+    new_df = app.query("SELECT * FROM JOBS WHERE JOBS.LOCATION = 'Boston, MA';")
+    locations = new_df["Location"]
+    assert locations is not None
+
+
+def test_return_more_info():
+    string = app.return_more_job_information(-71.0582912, 42.3602534)
+    assert len(string) > 0
+
+    string = app.return_more_job_information(123123123, 123123142231.11231231231233602534)
+    assert len(string) == 0
