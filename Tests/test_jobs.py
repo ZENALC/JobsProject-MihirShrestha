@@ -3,7 +3,6 @@ import os.path
 import random
 import pytest
 import sqlite3
-import pandas as pd
 import app
 
 databaseFileName = "jobs.db"
