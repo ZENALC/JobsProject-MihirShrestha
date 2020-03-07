@@ -1,3 +1,4 @@
+dateutil
 beautifulsoup4
 dash
 plotly

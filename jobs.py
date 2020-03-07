@@ -8,8 +8,6 @@ import sqlite3
 from typing import Tuple, List, Dict
 import feedparser
 import ssl
-import plotly.graph_objects as go
-import pandas as pd
 from bs4 import BeautifulSoup
 from dateutil import parser
 
@@ -37,26 +35,6 @@ def main():
         dump_data(githubJobs, fileName)
 
 
-def show_map():
-    databaseConnection = sqlite3.connect('jobs.db')
-    df = pd.read_sql_query("SELECT * FROM jobs", databaseConnection)
-    databaseConnection.commit()
-    databaseConnection.close()
-
-    fig = go.Figure(data=go.Scattergeo(
-        lon=df['geo_longitude'],
-        lat=df['geo_latitude'],
-        text=df['Company'] + " located at " + df['Location'],
-        mode='markers',
-    ))
-
-    fig.update_layout(
-        title='Jobs from GitHub and StackOverFlow',
-        geo_scope='world',
-    )
-    fig.show()
-
-
 def return_geo_location(geolocator, location: str):
     found = False
     failCounter = 0
@@ -75,7 +53,7 @@ def return_geo_location(geolocator, location: str):
             continue
     if not geoLocation:
         return None, None
-    print("Just retrieved geo-information for {}".format(location))
+    print("Just retrieved geo-information for {}.".format(location))
     return geoLocation.latitude, geoLocation.longitude
 
 
