@@ -93,7 +93,7 @@ def update_output_div(map_input, tech_input, company_input, start_date, end_date
                         "julianday('{}') <= julianday(jobs.Created_At) AND "
                         "julianday('{}') >= julianday(jobs.Created_At) AND "
                         "UPPER(jobs.Company)  LIKE '%{}%';".format(
-        tech_input.upper(), map_input.upper(), start_date, end_date, company_input.upper()))
+                         tech_input.upper(), map_input.upper(), start_date, end_date, company_input.upper()))
     return return_figure(temporaryDF)
 
 
