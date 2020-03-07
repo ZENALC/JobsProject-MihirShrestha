@@ -7,6 +7,7 @@ import sqlite3
 import pandas as pd
 from datetime import datetime as dt
 import jobs
+import os
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -16,7 +17,10 @@ app.config.suppress_callback_exceptions = True
 # Query that returns a new data frame from an SQL argument
 def query(arg="SELECT * FROM jobs"):
     databaseConnection = sqlite3.connect('jobs.db')
-    newDataFrame = pd.read_sql_query(arg, databaseConnection)
+    try:
+        newDataFrame = pd.read_sql_query(arg, databaseConnection)
+    except pd.io.sql.DatabaseError:
+        newDataFrame = None
     databaseConnection.close()
     return newDataFrame
 
@@ -64,11 +68,11 @@ def return_figure(data_frame):
 # then a prompt is given out whether or not to run jobs.main()
 def check_if_exists():
     found = False
-    try:
-        query()
+    if query("SELECT geo_longitude, geo_latitude FROM JOBS") is not None:
         found = True
-    except pd.io.sql.DatabaseError:
-        pass
+    else:
+        if os.path.exists("jobs.db"):
+            os.remove("jobs.db")
 
     answer = ''
     if found:
