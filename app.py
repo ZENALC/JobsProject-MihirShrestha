@@ -79,6 +79,7 @@ def check_if_exists():
         jobs.main()
 
 
+# Callback function for filtering data.
 @app.callback(
     Output(component_id='map', component_property='figure'),
     [Input(component_id='locationInput', component_property='value'),
@@ -96,6 +97,7 @@ def update_output_div(map_input, tech_input, company_input, start_date, end_date
     return return_figure(temporaryDF)
 
 
+# Callback function for retrieving more information on jobs.
 @app.callback(
     Output('additionalInfo', 'children'),
     [Input('map', 'clickData')])

@@ -102,7 +102,7 @@ def retrieve_jobs() -> List[Dict]:
         num += 1
 
     if len(missedList) > 0:
-        print("Missed data for page {} and potentially other future pages.".format(str(missedList)[1:-1]))
+        print("Missed data for page {} and potentially other following pages.".format(str(missedList)[1:-1]))
     else:
         print("Successfully retrieved data from all GitHub pages.")
 
@@ -152,6 +152,8 @@ def dump_data(jobs: list, file_name: str):
 
 
 # Simple function that dumps data to its corresponding column in the database.
+# UPDATE: The function also calls the return_geo_location function, strips HTML content
+# out of description and how to apply columns, and parses date appropriately for SQL.
 def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
     if not (type(jobs) is list or type(jobs) is dict):
         print("Illegal type of data. {} is of type {}. Please enter a list or dictionary.".format(jobs, type(jobs)))

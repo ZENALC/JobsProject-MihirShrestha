@@ -38,12 +38,11 @@ def test_retrieve_github_jobs(get_data_github):
 # if there is a file with the name specified. If it exists, then it is deleted. Then the dump function is called.
 # Then it checks if the file exists and if it has content that should be expected inside. In this case, I check
 # if it has the title 'Full Stack Software Engineer - Rails' inside.
-# UPDATE: It also picks a random one from the retrieved list now and checks if it exists in the .txt file.
+# UPDATE: It now only picks a random one from the retrieved list now and checks if it exists in the .txt file.
+# Jobs are being removed and created every single day, so it's not feasible to hard code it to one title.
 def test_dump_data(get_data_github):
-    testTitle = 'Full Stack Software Engineer - Rails'
     randomTestTitle = random.choice(get_data_github)['title']
     fileName = 'json.txt'
-
     if os.path.exists(fileName):
         os.remove(fileName)
 
@@ -54,17 +53,12 @@ def test_dump_data(get_data_github):
         fileLines = openFile.readlines()
         assert len(fileLines) > 0
 
-        match = False
         randomMatch = False
-
         for fileLine in fileLines:
-            if testTitle in fileLine:
-                match = True
             if randomTestTitle in fileLine:
                 randomMatch = True
-            if match and randomMatch:
                 break
-        assert match and randomMatch
+        assert randomMatch
 
 
 # Simple function that checks if the function dump_data() handles illogical data correctly. If the data is
@@ -152,20 +146,13 @@ def test_save_to_database(get_data_github, get_data_stackoverflow):
     # Checking if the database has some values that should be expected there. In this case, I know
     # that there is a job where the title is 'Lead Data Acquisition Design Engineer'.
     # It also picks a random one from the retrieved list and checks if it exists in the database.
-    # UPDATE: It also checks for a random title from the stackoverflow list and a title that I know is there.
+    # UPDATE: It only checks for random titles from the StackOverFlow and Github lists.
     testTitle1 = random.choice(get_data_github)['title']
-    testTitle2 = "Lead Data Acquisition Design Engineer"
-    testTitle3 = "Senior Python Backend Engineer at Tessian (London, UK)"
-    testTitle4 = random.choice(get_data_stackoverflow)['title']
+    testTitle2 = random.choice(get_data_stackoverflow)['title']
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle1,))
     assert cursor.fetchone()
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle2,))
     assert cursor.fetchone()
-    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle3,))
-    assert cursor.fetchone()
-    cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle4,))
-    assert cursor.fetchone()
-
     jobs.close_db(connection)
 
 
@@ -217,21 +204,3 @@ def test_add_to_database_with_bad_data():
     jobs.save_to_database([[]], connection, cursor)
     jobs.save_to_database([{'id': 'test23', "type": "full-time"}], connection, cursor)
     jobs.save_to_database({'id': 'test23', "type": "full-time"}, connection, cursor)
-
-
-# Function that tries to add values that should've dropped the table jobs. Tests for SQL injection.
-def test_add_to_database_sql_injection():
-    connection, cursor = jobs.open_db(databaseFileName)
-    sqlInjectionDict = [
-        {"id": "; DROP TABLE JOBS",
-         "type": "; DROP TABLE JOBS",
-         "url": "; DROP TABLE JOBS",
-         "created_at": "; DROP TABLE JOBS",
-         "company": "; DROP TABLE JOBS",
-         "company_url": "; DROP TABLE JOBS",
-         "location": "; DROP TABLE JOBS",
-         "title": "; DROP TABLE JOBS",
-         "description": "; DROP TABLE JOBS",
-         "how_to_apply": "; DROP TABLE JOBS",
-         "company_logo": "; DROP TABLE JOBS"}]
-    jobs.save_to_database(sqlInjectionDict, connection, cursor)
