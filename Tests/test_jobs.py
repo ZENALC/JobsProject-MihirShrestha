@@ -139,17 +139,18 @@ def test_save_to_database(get_data_github, get_data_stackoverflow):
     if os.path.exists(databaseFileName):
         os.remove(databaseFileName)
 
+    # The amount of jobs is compressed to 30 per source, so the test doesn't take an eternity to run
     connection, cursor = jobs.open_db(databaseFileName)
     jobs.create_table(connection, cursor)
-    jobs.save_to_database(get_data_github, connection, cursor)
-    jobs.save_to_database(get_data_stackoverflow, connection, cursor)
+    jobs.save_to_database(get_data_github[:30], connection, cursor)
+    jobs.save_to_database(get_data_stackoverflow[:30], connection, cursor)
 
     # Checking if the database has some values that should be expected there. In this case, I know
     # that there is a job where the title is 'Lead Data Acquisition Design Engineer'.
     # It also picks a random one from the retrieved list and checks if it exists in the database.
     # UPDATE: It only checks for random titles from the StackOverFlow and Github lists.
-    testTitle1 = random.choice(get_data_github)['title']
-    testTitle2 = random.choice(get_data_stackoverflow)['title']
+    testTitle1 = random.choice(get_data_github[:30])['title']
+    testTitle2 = random.choice(get_data_stackoverflow[:30])['title']
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle1,))
     assert cursor.fetchone()
     cursor.execute("SELECT * FROM jobs WHERE jobs.Title = ?", (testTitle2,))
