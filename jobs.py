@@ -151,6 +151,30 @@ def dump_data(jobs: list, file_name: str):
     print("Successfully dumped JSON data to {}.".format(file_name))
 
 
+def check_if_cache_exists_and_return_geo(cursor, id, location, geolocator):
+    cursor.execute("SELECT * FROM jobs WHERE jobs.id = ?", (id,))
+    if cursor.fetchone() is not None:
+        return None, None
+    cursor.execute("SELECT jobs.geo_latitude, jobs.geo_longitude FROM jobs WHERE jobs.location = ?",
+                   (location,))
+    cursorResult = cursor.fetchone()
+    if cursorResult is not None:
+        print("Just retrieved cached geo-information for {}.".format(location))
+        return cursorResult
+    else:
+        return return_geo_location(geolocator, location)
+
+
+def strip_html(desc, how_to_apply):
+    if desc is not None:
+        soup = BeautifulSoup(desc, features="html.parser")
+        desc = soup.get_text()
+    if how_to_apply is not None:
+        soup = BeautifulSoup(how_to_apply, features="html.parser")
+        how_to_apply = soup.get_text()
+    return desc, how_to_apply
+
+
 # Simple function that dumps data to its corresponding column in the database.
 # UPDATE: The function also calls the return_geo_location function, strips HTML content
 # out of description and how to apply columns, and parses date appropriately for SQL.
@@ -165,24 +189,9 @@ def save_to_database(jobs: list, connection: sqlite3.Connection, cursor: sqlite3
         if len(job) != 11:
             print("Incorrect number of arguments. Insertion failed.")
             return None
-        cursor.execute("SELECT * FROM jobs WHERE jobs.id = ?", (job['id'],))
-        if cursor.fetchone() is not None:
-            continue
-        cursor.execute("SELECT jobs.geo_latitude, jobs.geo_longitude FROM jobs WHERE jobs.location = ?",
-                       (job['location'],))
-        cursorResult = cursor.fetchone()
-        if cursorResult is not None:
-            geolocation = cursorResult
-            print("Just retrieved cached geo-information for {}.".format(job['location']))
-        else:
-            geolocation = return_geo_location(geolocator, job['location'])
+        geolocation = check_if_cache_exists_and_return_geo(cursor, job['id'], job['location'], geolocator)
+        job['description'], job['how_to_apply'] = strip_html(job['description'], job['how_to_apply'])
         try:
-            if job['description'] is not None:
-                soup = BeautifulSoup(job['description'], features="html.parser")
-                job['description'] = soup.get_text()
-            if job['how_to_apply'] is not None:
-                soup = BeautifulSoup(job['how_to_apply'], features="html.parser")
-                job['how_to_apply'] = soup.get_text()
             cursor.execute("INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                            [job['id'],
                             job['type'],
