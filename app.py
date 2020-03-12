@@ -47,8 +47,11 @@ def query_by_distance(dataFrame, radius):
 # Function that returns more details about a job and/or more jobs if they exist at the same coordinate.
 def return_more_job_information(lon, lat):
     totalString = []
-    temp_data_frame = query("SELECT * FROM JOBS WHERE JOBS.GEO_LONGITUDE = '{}' "
-                            "AND JOBS.GEO_LATITUDE = '{}'".format(lon, lat))
+    if lon is None and lat is None:
+        temp_data_frame = query("SELECT * FROM JOBS WHERE JOBS.GEO_LONGITUDE IS NULL AND JOBS.GEO_LATITUDE IS NULL;")
+    else:
+        temp_data_frame = query("SELECT * FROM JOBS WHERE JOBS.GEO_LONGITUDE = '{}' "
+                                "AND JOBS.GEO_LATITUDE = '{}'".format(lon, lat))
     titles = temp_data_frame["Title"]
     descriptions = temp_data_frame['Description']
     datesPosted = temp_data_frame['Created_at']
@@ -143,19 +146,26 @@ def update_output_div(map_input, location_by_distance_input, tech_input, company
 # Callback function for retrieving more information on jobs.
 @app.callback(
     Output('additionalInfo', 'children'),
-    [Input('map', 'clickData')])
-def display_click_data(click_data):
-    if click_data is not None:
-        moreData = click_data['points'][0]
-        lon, lat = moreData['lon'], moreData['lat']
-        return return_more_job_information(lon, lat)
+    [Input('map', 'clickData'),
+     Input('my-button', 'n_clicks')])
+def display_click_data(click_data, n_clicks):
+    global buttonClicks
+    if n_clicks is not None and n_clicks > buttonClicks:
+        buttonClicks = n_clicks
+        return return_more_job_information(None, None)
     else:
-        return "No data selected. Please make sure to click on a data point to view more jobs in that area."
+        if click_data is not None:
+            moreData = click_data['points'][0]
+            lon, lat = moreData['lon'], moreData['lat']
+            return return_more_job_information(lon, lat)
+        else:
+            return "No data selected. Please make sure to click on a data point to view more jobs in that area."
 
 
 if __name__ == '__main__':
     app.title = "Jobs Map Filter"
     check_if_exists()
+    buttonClicks = 0
     app.layout = html.Div([
         html.H5(
             children='Welcome to the job seeking tool.',
@@ -176,6 +186,10 @@ if __name__ == '__main__':
         html.Label(children='Filter Job Company - eg. Facebook'),
         dcc.Input(id='companyInput', value='', type='text'),
 
+        html.Br(),
+
+        html.Button('Click to display Remote Jobs Information Below', id='my-button'),
+
         html.Label('Filter jobs by date.'),
         dcc.DatePickerRange(
             id="datePick",
@@ -193,7 +207,7 @@ if __name__ == '__main__':
             figure=return_figure(query()),
         ),
 
-        html.H4(children="More Details"),
+        html.H4(children="More Details or Remote Jobs"),
         html.Label(id="additionalInfo", children="No data selected. Please make sure to click on a "
                                                  "data point to view more jobs in that area.")
 
