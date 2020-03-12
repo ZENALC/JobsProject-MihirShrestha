@@ -19,7 +19,7 @@ def main():
     # nice job on sprint one - benign comment to test github actions
     WRITE_TO_FILE = True
     UPDATE_DATABASE = True
-    DUMP_TO_MONGO = True
+    DUMP_TO_MONGO = False  # Only set to True if you have a Mongo Server running, or you will receive a timeoutError.
 
     githubJobs = retrieve_jobs()  # these are from github
     stackOverFlowjobs = retrieve_stack_over_flow_jobs()  # these are from stackOverFlow
@@ -37,7 +37,10 @@ def main():
         dump_data(totalJobs, fileName)
 
     if DUMP_TO_MONGO:
-        write_to_mongo(totalJobs)
+        try:
+            write_to_mongo(totalJobs)
+        except pymongo.errors.ServerSelectionTimeoutError:
+            print("No MongoDB service found. Please start one.")
 
 
 def return_geo_location(geolocator, location: str):
