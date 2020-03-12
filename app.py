@@ -8,6 +8,8 @@ import pandas as pd
 from datetime import datetime as dt
 import jobs
 import os
+from geopy import distance
+from geopy import Point
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -23,6 +25,23 @@ def query(arg="SELECT * FROM jobs"):
         newDataFrame = None
     databaseConnection.close()
     return newDataFrame
+
+
+def query_by_distance(dataFrame, radius):
+    queryList = dataFrame.to_dict('records')
+    newList = []
+    bridgeWaterLatitude = 41.9904
+    bridgeWaterLongitude = 70.9751
+
+    for row in queryList:
+        latitude = row['geo_latitude']
+        longitude = row['geo_longitude']
+        if latitude is None or longitude is None:
+            continue
+        if is_inside_radius(bridgeWaterLatitude, bridgeWaterLongitude,
+                            abs(float(latitude)), abs(float(longitude)), radius):
+            newList.append(row)
+    return pd.DataFrame(newList)
 
 
 # Function that returns more details about a job and/or more jobs if they exist at the same coordinate.
@@ -64,6 +83,17 @@ def return_figure(data_frame):
     return figure
 
 
+def is_inside_radius(latitude1, longitude1, latitude2, longitude2, radius):
+    if latitude1 is not None and longitude1 is not None and latitude2 is not None and longitude2 is not None:
+        point1 = Point(latitude1, longitude1)
+        point2 = Point(latitude2, longitude2)
+        result = distance.distance(point1, point2).miles
+
+        if result <= radius:
+            return True
+    return False
+
+
 # Just a simple function that checks if a table named jobs already exists. If it exists,
 # then a prompt is given out whether or not to run jobs.main()
 def check_if_exists():
@@ -87,17 +117,25 @@ def check_if_exists():
 @app.callback(
     Output(component_id='map', component_property='figure'),
     [Input(component_id='locationInput', component_property='value'),
+     Input(component_id='locationByDistanceInput', component_property='value'),
      Input(component_id='techInput', component_property='value'),
      Input(component_id='companyInput', component_property='value'),
      Input(component_id='datePick', component_property='start_date'),
      Input(component_id='datePick', component_property='end_date')])
-def update_output_div(map_input, tech_input, company_input, start_date, end_date):
+def update_output_div(map_input, location_by_distance_input, tech_input, company_input, start_date, end_date):
     temporaryDF = query("SELECT * FROM jobs WHERE UPPER(jobs.description) "
                         "LIKE '%{}%' AND UPPER(jobs.location) LIKE '%{}%' AND "
                         "julianday('{}') <= julianday(jobs.Created_At) AND "
                         "julianday('{}') >= julianday(jobs.Created_At) AND "
                         "UPPER(jobs.Company)  LIKE '%{}%';".format(
                          tech_input.upper(), map_input.upper(), start_date, end_date, company_input.upper()))
+
+    if location_by_distance_input is not None and location_by_distance_input != '':
+        secondTempDF = query_by_distance(temporaryDF, float(location_by_distance_input))
+        if secondTempDF.empty:
+            temporaryDF = query("SELECT * FROM JOBS WHERE JOBS.LOCATION = 'IJADIJAIDJA';")
+        else:
+            temporaryDF = secondTempDF
     return return_figure(temporaryDF)
 
 
@@ -128,6 +166,9 @@ if __name__ == '__main__':
         html.Label(children='Filter Location - eg. Boston, MA'),
         dcc.Input(id='locationInput', value='', type='text'),
 
+        html.Label(children='Filter Distance in Miles from Bridgewater'),
+        dcc.Input(id='locationByDistanceInput', value='', type='number'),
+
         html.Label(children='Filter Job Technology - eg. Python'),
         dcc.Input(id='techInput', value='', type='text'),
 
@@ -156,4 +197,4 @@ if __name__ == '__main__':
                                                  "data point to view more jobs in that area.")
 
     ])
-    app.run_server(debug=False, use_reloader=False)
+    app.run_server(debug=True, use_reloader=False)

@@ -182,13 +182,41 @@ def test_add_to_database_with_good_data():
     jobs.close_db(connection)
 
 
+# Test to check if the radii are being checked correctly
+def test_is_inside_radius():
+    assert app.is_inside_radius(1, 1, 1, 1, 0)
+
+    bridgeWaterCoordinates = (41.9904, 70.9751)
+    bostonCoordinates = (42.3601, 71.0589)
+    californiaCoordinates = (36.7783, 119.4179)
+
+    assert app.is_inside_radius(bridgeWaterCoordinates[0], bridgeWaterCoordinates[1], bostonCoordinates[0],
+                                bostonCoordinates[1], 50)
+    assert not app.is_inside_radius(bridgeWaterCoordinates[0], bridgeWaterCoordinates[1], bostonCoordinates[0],
+                                    bostonCoordinates[1], 10)
+    assert app.is_inside_radius(bridgeWaterCoordinates[0], bridgeWaterCoordinates[1], californiaCoordinates[0],
+                                californiaCoordinates[1], 4000)
+    assert not app.is_inside_radius(bridgeWaterCoordinates[0], bridgeWaterCoordinates[1], californiaCoordinates[0],
+                                    californiaCoordinates[1], 200)
+
+
+def test_additional_filters():
+    df = app.query("SELECT * FROM jobs WHERE julianday('2020-01-01') <= julianday(jobs.Created_At);")
+    found = False
+    if not df.empty:
+        df = app.query_by_distance(df, 50)
+        if not df.empty:
+            found = True
+    assert found
+
+
 # Simple test function that tries to add bad new data to a database then checks if it is updated accordingly.
 def test_add_to_database_with_bad_data():
     # Adding bad data to the database.
     additionalTestData = {
-            "id": "TESTID2",
-            "type": "Part Time",
-            "url": "test1.com"}
+        "id": "TESTID2",
+        "type": "Part Time",
+        "url": "test1.com"}
     connection, cursor = jobs.open_db(databaseFileName)
 
     # Checking if the new data is added to the database.
@@ -223,3 +251,11 @@ def test_return_more_info():
 
     string = app.return_more_job_information(123123123, 123123142231.11231231231233602534)
     assert len(string) == 0
+
+
+# Testing goepy with approximate coordinates
+def test_geopy():
+    bostonCoordinates = (42, -71)
+    df = app.query("SELECT geo_latitude, geo_longitude FROM jobs WHERE jobs.location = 'Boston, MA';")
+    assert int(float(df['geo_latitude'].values[0])) == bostonCoordinates[0]
+    assert int(float(df['geo_longitude'].values[0])) == bostonCoordinates[1]
