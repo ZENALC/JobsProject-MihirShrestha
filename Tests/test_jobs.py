@@ -4,6 +4,7 @@ import random
 import pytest
 import sqlite3
 import app
+import pymongo
 
 databaseFileName = "jobs.db"
 testFileName = "test.txt"
@@ -253,9 +254,51 @@ def test_return_more_info():
     assert len(string) == 0
 
 
-# Testing goepy with approximate coordinates
+# Testing geopy with approximate coordinates
 def test_geopy():
     bostonCoordinates = (42, -71)
     df = app.query("SELECT geo_latitude, geo_longitude FROM jobs WHERE jobs.location = 'Boston, MA';")
     assert int(float(df['geo_latitude'].values[0])) == bostonCoordinates[0]
     assert int(float(df['geo_longitude'].values[0])) == bostonCoordinates[1]
+
+
+def test_mongodb(get_data_github, get_data_stackoverflow):
+    # Pretty self-explanatory. Setting up connections and adding the two jobs to one list.
+    client = pymongo.MongoClient("mongodb://localhost:27017/")
+    database = client["database"]
+    allJobs = get_data_github + get_data_stackoverflow
+
+    # Dropping the collection to make sure the function actually creates a fresh, new one.
+    if "jobs" in database.list_collection_names():
+        database.drop_collection("jobs")
+
+    # Creating and writing to a new collection
+    jobs.write_to_mongo(allJobs)
+    collection = database['jobs']
+    exists = False
+
+    # Checking if collection contains an entry with Boston as a location
+    for obj in collection.find():
+        if obj['location'] == 'Boston, MA':
+            exists = True
+    assert exists
+
+    # Creating some test data and throwing it in the database to check if it is being stored.
+    testData = {"_id": "TESTID1",
+                "type": "Full Time",
+                "url": "test1.com",
+                "created_at": "Sat Feb 01 12:53:40 UTC 2020",
+                "company": "TESTCOMPANY",
+                "company_url": "test1.com",
+                "location": "Boston, MA",
+                "title": "Senior Python/Django Developer ",
+                "description": "Test Description",
+                "how_to_apply": "Yes.",
+                "company_logo": "test.png"}
+    newJobInsert = False
+    collection.insert_one(testData)
+    for obj in collection.find():
+        if obj['_id'] == 'TESTID1':
+            newJobInsert = True
+
+    assert newJobInsert
