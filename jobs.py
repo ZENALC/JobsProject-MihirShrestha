@@ -10,6 +10,7 @@ import feedparser
 import ssl
 from bs4 import BeautifulSoup
 from dateutil import parser
+import pymongo
 
 
 # Main function that calls the retrieve_jobs(), open_db(), create_table_jobs(),
@@ -18,21 +19,25 @@ def main():
     # nice job on sprint one - benign comment to test github actions
     WRITE_TO_FILE = True
     UPDATE_DATABASE = True
+    DUMP_TO_MONGO = True
 
     githubJobs = retrieve_jobs()  # these are from github
     stackOverFlowjobs = retrieve_stack_over_flow_jobs()  # these are from stackOverFlow
+    totalJobs = githubJobs + stackOverFlowjobs
 
     if UPDATE_DATABASE:
         databaseName = 'jobs.db'
         connection, cursor = open_db(databaseName)
         create_table(connection, cursor)
-        save_to_database(githubJobs, connection, cursor)
-        save_to_database(stackOverFlowjobs, connection, cursor)
+        save_to_database(totalJobs, connection, cursor)
         close_db(connection)
 
     if WRITE_TO_FILE:
         fileName = "json.txt"
-        dump_data(githubJobs, fileName)
+        dump_data(totalJobs, fileName)
+
+    if DUMP_TO_MONGO:
+        write_to_mongo(totalJobs)
 
 
 def return_geo_location(geolocator, location: str):
@@ -108,6 +113,22 @@ def retrieve_jobs() -> List[Dict]:
         print("Successfully retrieved data from all GitHub pages.")
 
     return jsonData
+
+
+def write_to_mongo(listOfJobs):
+    client = pymongo.MongoClient("mongodb://localhost:27017/")
+    database = client["database"]
+    collection = database['jobs']
+
+    for job in listOfJobs:
+        try:
+            job["_id"] = job["id"]
+            del job["id"]
+            collection.insert_one(job)
+        except pymongo.errors.DuplicateKeyError:
+            pass
+
+    print("Successfully dumped data to MongoDB.")
 
 
 def retrieve_stack_over_flow_jobs():

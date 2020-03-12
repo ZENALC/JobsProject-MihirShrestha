@@ -139,7 +139,7 @@ def test_save_to_database(get_data_github, get_data_stackoverflow):
     if os.path.exists(databaseFileName):
         os.remove(databaseFileName)
 
-    # The amount of jobs is compressed to 30 per source, so the test doesn't take an eternity to run
+    # The amount of jobs is compressed to 30 per source, so the test doesn't take an eternity to run.
     connection, cursor = jobs.open_db(databaseFileName)
     jobs.create_table(connection, cursor)
     jobs.save_to_database(get_data_github[:30], connection, cursor)
