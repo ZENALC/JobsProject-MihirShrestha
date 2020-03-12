@@ -1,3 +1,4 @@
+pymongo
 beautifulsoup4
 dash
 plotly
