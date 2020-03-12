@@ -133,6 +133,7 @@ def update_output_div(map_input, location_by_distance_input, tech_input, company
     if location_by_distance_input is not None and location_by_distance_input != '':
         secondTempDF = query_by_distance(temporaryDF, float(location_by_distance_input))
         if secondTempDF.empty:
+            # Running an extremely weird and unefficent code to retrieve an empty dataframe with columns.
             temporaryDF = query("SELECT * FROM JOBS WHERE JOBS.LOCATION = 'IJADIJAIDJA';")
         else:
             temporaryDF = secondTempDF

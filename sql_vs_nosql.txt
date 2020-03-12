@@ -1,0 +1,14 @@
+A NoSQL database like MongoDB would be preferable for an extremely small project like this in my opinion.
+
+As you can see from my jobs.py file, the SQL functions were very long and kind of convoluted in comparison
+to the simple function that I made for MongoDB.
+
+Also, the JSON file format that we used for these sprints would've been a perfect
+fit for MongoDB as it is made to work naturally with that from the beginning.
+
+However, with SQL databases, you have to create columns first, and then finally insert it by mapping each dictionary's
+key to its respective column in the database.
+
+All in all, I would prefer the use of SQL databases if my program would need more than about a hundred thousand entries of data; however,
+if I were working on a project as small as this and with a data-format like JSON, I would undoubtedly use a database like MongoDB and
+use the extra time and energy I get from not having to deal with SQL to implement additional functions in my main program.
