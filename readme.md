@@ -1,4 +1,4 @@
-### Old school project. Not updated anymore.
+# Old school project. Not updated anymore.
 
 Name: Mihir Shrestha
 
