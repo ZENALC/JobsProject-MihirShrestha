@@ -11,9 +11,11 @@ folder that ensure the code works as intended. As of sprint 4, a new GUI has bee
 it shows the locations in an interactive map. Filters can be now applied through the GUI to filter
 through companies, job technologies, locations, and dates the jobs were missing.
 
-# What is missing: 
+## What is missing: 
 The database still can contain outdated data as it does not delete non-existent, old records.
 However, a simple deletion of the db file takes care of this issue. 
+
+## Updates
 
 UPDATE: Github actions work fine now, and a more appropriate manner of dumping JSON data has been implemented.\
 UPDATE: Functionality to save to an SQLITE3 database has been implemented.\
