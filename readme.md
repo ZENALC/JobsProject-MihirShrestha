@@ -1,7 +1,5 @@
 # Old school project. Not updated anymore.
 
-Name: Mihir Shrestha
-
 Requirements: JSON, time, pytest, os, beautifulsoup4, dash, plotly, geopy,
 requests, pytest, feedparser, pandas, pymongo
 
