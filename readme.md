@@ -1,5 +1,8 @@
 # Old school project. Not updated anymore.
 
+## Installation
+```pip install requirements.txt```
+
 ## Requirements: 
 JSON, time, pytest, os, beautifulsoup4, dash, plotly, geopy,
 requests, pytest, feedparser, pandas, pymongo
@@ -18,19 +21,19 @@ However, a simple deletion of the db file takes care of this issue.
 ## Updates
 
 ### UPDATE 1: 
-Github actions work fine now, and a more appropriate manner of dumping JSON data has been implemented.\
+Github actions work fine now, and a more appropriate manner of dumping JSON data has been implemented.
 
 ### UPDATE 2: 
-Functionality to save to an SQLITE3 database has been implemented.\
+Functionality to save to an SQLITE3 database has been implemented.
 
 ### UPDATE 3: 
-Functionality to display and filter the data in a GUI (dash) has been implemented.\
+Functionality to display and filter the data in a GUI (dash) has been implemented.
 
 ### UPDATE 4: 
-Functionality to save to a NoSQL database like MongoDB has been added.\
+Functionality to save to a NoSQL database like MongoDB has been added.
 
 ### UPDATE 5: 
-For my additional filter, I picked location. Albeit not as elegant as I'd like it to be, it uses SQL and the LIKE command to find locations that match the text entered. I'll update this accordingly for the extra credit problem within the next few days.\
+For my additional filter, I picked location. Albeit not as elegant as I'd like it to be, it uses SQL and the LIKE command to find locations that match the text entered. I'll update this accordingly for the extra credit problem within the next few days.
 
 ### UPDATE 6: 
 Now, the program supports two location filters; if you want to locate NY jobs, you can just type in NY, and it'll show you NY jobs (and other jobs that have "ny" as part of its location). Or, if you want to find jobs that are within a certain radius from Bridgewater, that functionality has been implemented as well! Since the layout is not important for this project, it looks very simple,
